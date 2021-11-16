@@ -70,6 +70,17 @@ LOAD DATA INFILE '/Users/reillykoren/Desktop/Parking_Violations_Issued_-_Fiscal_
  ENCLOSED BY '"'
  LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
-
+ALTER TABLE mega_table
+	DROP COLUMN no_standing_or_stopping,
+	DROP COLUMN hydrant_violation,
+	DROP COLUMN double_parking,
+	DROP COLUMN latitude,
+	DROP COLUMN longitude,
+	DROP COLUMN community_board,
+	DROP COLUMN community_council,
+	DROP COLUMN census_tract,
+	DROP COLUMN bin_no,
+	DROP COLUMN bbl,
+	DROP COLUMN nta;
 SELECT * FROM mega_table
 LIMIT 100;
