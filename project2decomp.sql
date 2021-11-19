@@ -1,7 +1,4 @@
-# Creating Database
-DROP DATABASE IF EXISTS parking_data;
-CREATE DATABASE parking_data;
-USE parking_data;
+USE parking_data2;
 
 # Creating mega_table
 # IMPORTANT: NOTE THAT YOU MUST ADJUST YOUR MYSQL TIMEOUT SETTINGS
@@ -87,93 +84,98 @@ ALTER TABLE mega_table
 	DROP COLUMN violation_location;
 ALTER TABLE mega_table
     DROP COLUMN violation_legal_Code;
-    
-## CLEANING COUNTY DATA
-UPDATE mega_table
-SET
-	violation_county = 'Q'
-WHERE violation_county = 'QUEEN';
-
-UPDATE mega_table
-SET
-	violation_county = 'K'
-WHERE violation_county = 'KINGS';
-
-UPDATE mega_table
-SET
-	violation_county = 'RC'
-WHERE violation_county = 'RICH' or violation_county = 'RC';
-
-UPDATE mega_table
-SET
-	violation_county = 'NYC'
-WHERE violation_county = 'NY';
-
-UPDATE mega_table
-SET
-	violation_county = 'BRONX'
-WHERE violation_county = 'BX';
-
-## CLEANING STREET DATA
-UPDATE mega_table
-SET
-	street_name = LOWER(street_name);
-    
-UPDATE mega_table
-SET
-	street_name = REPLACE(street_name, 'avenue', 'ave');
-
-UPDATE mega_table
-SET
-	street_name = REPLACE(street_name, 'street', 'st');
-
-## CREATING STREET TABLE
-DROP TABLE IF EXISTS Street;
-CREATE TABLE Street AS
-	(SELECT
-    DISTINCT street_name,
-    violation_county,
-    days_parking_in_effect,
-    from_hours_in_effect,
-    to_hours_in_effect
-    FROM mega_table);
-
-ALTER TABLE Street ADD COLUMN street_id INT DEFAULT 0;
-ALTER TABLE Street MODIFY street_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY;
-
-SELECT * FROM Street;
+-- -----------------------------------------------------
+-- Table Issuer
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS Issuer (
+  issuer_code INT(8) NOT NULL,
+  issuing_agency VARCHAR(2) NULL,
+  issuer_precinct INT(3) NULL,
+  issuer_command VARCHAR(5) NULL,
+  issuer_squad VARCHAR(5) NULL,
+  PRIMARY KEY (issuer_code))
+ENGINE = InnoDB;
 
 
-DROP TABLE IF EXISTS Ticket;
-CREATE TABLE Ticket AS 
-	(SELECT 
-    summons_number,
-    issue_date,
-    violation_code,
-    violation_precinct,
-    violation_time,
-    date_first_observed,
-    time_first_observed,
-    front_or_opposite,
-    law_section,
-    sub_division,
-    meter_number,
-    feet_from_curb,
-    violation_description,
-    intersecting_street,
-    house_number,
-    plate_id,
-    street_name,
-    issuer_code FROM mega_table);
+-- -----------------------------------------------------
+-- Table Address
+-- -----------------------------------------------------
+DROP TABLE Address;
+CREATE TABLE IF NOT EXISTS Address (
+  full_street_code VARCHAR(25) NULL,
+  violation_county VARCHAR(45) NULL,
+  street_name TEXT NULL,
+  days_parking_in_effect VARCHAR(10) NULL,
+  from_hours_in_effect VARCHAR(10) NULL,
+  to_hours_in_effect VARCHAR(10) NULL,
+  location_id INT(12) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (location_id))
+ENGINE = InnoDB;
 
-# ALTER TABLE Ticket ADD COLUMN street_id INT DEFAULT 0;
 
-# Should work to create identifier, but times out, don't use
-# UPDATE Ticket, Street
-# SET 
-#	Ticket.street_id = Street.street_id
-# WHERE Ticket.street_name = Street.street_name;
+-- -----------------------------------------------------
+-- Table Vehicle
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS Vehicle (
+  plate_id VARCHAR(20) NOT NULL,
+  registration_state VARCHAR(2) NOT NULL,
+  plate_type VARCHAR(4) NULL,
+  vehicle_body_type VARCHAR(10) NULL,
+  vehicle_make VARCHAR(10) NULL,
+  vehicle_expiration_date INT(12) NULL,
+  vehicle_color VARCHAR(10) NULL,
+  unregistered_vehicle VARCHAR(10) NULL,
+  vehicle_year VARCHAR(10) NULL,
+  PRIMARY KEY (plate_id, registration_state))
+ENGINE = InnoDB;
 
+
+-- -----------------------------------------------------
+-- Table Ticket
+-- -----------------------------------------------------
+DROP TABLE Ticket;
+CREATE TABLE IF NOT EXISTS Ticket (
+  summons_number BIGINT(20) NOT NULL,
+  issue_date VARCHAR(15) NULL,
+  violation_code INT(2) NULL,
+  violation_precinct INT(2) NULL,
+  violation_time VARCHAR(5) NULL,
+  date_first_observed VARCHAR(10) NULL,
+  time_first_observed VARCHAR(10) NULL,
+  front_or_opposite VARCHAR(2) NULL,
+  law_section VARCHAR(100) NULL,
+  sub_division VARCHAR(5) NULL,
+  meter_number VARCHAR(100) NULL,
+  feet_from_curb VARCHAR(10) NULL,
+  violation_description VARCHAR(45) NULL,
+  house_number VARCHAR(45) NULL,
+  intersecting_street VARCHAR(100) NULL,
+  issuer_code INT(8) NOT NULL,
+  full_street_code VARCHAR(100) NOT NULL,
+  street_name TEXT NOT NULL,
+  location_id INT(12) NOT NULL,
+  plate_id VARCHAR(20) NOT NULL,
+  registration_state VARCHAR(2) NOT NULL,
+  PRIMARY KEY (summons_number),
+  FOREIGN KEY ()
+ENGINE = InnoDB;
+
+
+SET SESSION sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+
+## Filling Ticket
+INSERT INTO Ticket (summons_number, issue_date, violation_code, violation_precinct, violation_time,
+date_first_observed, time_first_observed, front_or_opposite, law_section, sub_division, meter_number,
+feet_from_curb, violation_description, house_number, intersecting_street, issuer_code, full_street_code,
+street_name, location_id, plate_id, registration_state)
+SELECT summons_number, issue_date, violation_code, violation_precinct, violation_time,
+date_first_observed, time_first_observed, front_or_opposite, law_section, sub_division, meter_number,
+feet_from_curb, violation_description, house_number, intersecting_street, issuer_code, CONCAT(street_code1,'-',street_code2,'-',street_code3) AS full_street_code,
+street_name, 0, plate_id, registration_state
+FROM mega_table
+ORDER BY summons_number DESC;
+
+# Cleaning Ticket
 UPDATE Ticket
 SET
 	date_first_observed = 
@@ -192,32 +194,88 @@ SET
 	time_first_observed = violation_time
 WHERE time_first_observed = '';
 
+## Filling Vehicle
+INSERT INTO Vehicle(plate_id, registration_state, plate_type, vehicle_body_type, vehicle_make, vehicle_expiration_date,
+vehicle_color, unregistered_vehicle, vehicle_year)
+SELECT plate_id, registration_state, plate_type, vehicle_body_type, vehicle_make, vehicle_expiration_date,
+vehicle_color, unregistered_vehicle, vehicle_year
+FROM mega_table
+GROUP BY
+plate_id, registration_state;
 
-DROP TABLE IF EXISTS Vehicle;
-CREATE TABLE Vehicle AS 
-	(SELECT 
-    DISTINCT plate_id,
-    registration_state,
-    plate_type,
-    vehicle_body_type,
-    vehicle_make,
-    vehicle_expiration_date,
-    vehicle_color,
-    unregistered_vehicle,
-    vehicle_year FROM mega_table);
+## Filling Issuer
+INSERT INTO Issuer(issuer_code, issuing_agency, issuer_precinct, issuer_command, issuer_squad)
+SELECT issuer_code, issuing_agency, issuer_precint, issuer_command, issuer_squad
+FROM mega_table
+GROUP BY
+issuer_code;
+
+## Cleaning Street Data 
+UPDATE mega_table
+SET
+	street_name = LOWER(street_name);
     
-DROP TABLE IF EXISTS Issuer;
-CREATE TABLE Issuer AS 
-	(SELECT 
-    DISTINCT issuer_code,
-    issuing_agency,
-    issuer_precint,
-    issuer_command,
-    issuer_squad
-    FROM mega_table);
+UPDATE mega_table
+SET
+	street_name = REPLACE(street_name, 'avenue', 'ave');
 
+UPDATE mega_table
+SET
+	street_name = REPLACE(street_name, 'street', 'st');
+
+## Filling Address
+INSERT INTO Address(full_street_code, violation_county, street_name, 
+	days_parking_in_effect, from_hours_in_effect, to_hours_in_effect)
+SELECT CONCAT(street_code1,'-',street_code2,'-',street_code3) AS full_street_code, violation_county,
+	street_name, days_parking_in_effect, from_hours_in_effect, to_hours_in_effect
+FROM mega_table
+GROUP BY
+full_street_code, street_name;
+
+## CLEANING COUNTY DATA
+UPDATE Address
+SET
+	violation_county = 'Q'
+WHERE violation_county = 'QUEEN';
+
+UPDATE Address
+SET
+	violation_county = 'K'
+WHERE violation_county = 'KINGS';
+
+UPDATE Address
+SET
+	violation_county = 'RC'
+WHERE violation_county = 'RICH' or violation_county = 'RC';
+
+UPDATE Address
+SET
+	violation_county = 'NYC'
+WHERE violation_county = 'NY';
+
+UPDATE Address
+SET
+	violation_county = 'BRONX'
+WHERE violation_county = 'BX';
+
+    
+### FOREIGN KEY ADDING
+# Adding Vehicle Foreign KEY
+# NEED TO FIND QUICKER WAY FOR THIS
+#ALTER TABLE Ticket ADD CONSTRAINT fk_plate_id FOREIGN KEY (plate_id, registration_state) REFERENCES Vehicle(plate_id, registration_state);
+
+# Adding Issuer Foreign Key
+ALTER TABLE Ticket ADD CONSTRAINT fk_issuer_code FOREIGN KEY (issuer_code) REFERENCES Issuer(issuer_code);
+
+# Adding Address Foreign Key
+# Still takes too long, will need a fix
+SET SQL_SAFE_UPDATES = 0;
+UPDATE Ticket, Address
+SET Ticket.location_id = Address.location_id
+WHERE Ticket.full_street_code = Address.full_street_code AND Ticket.street_name = Address.street_name;
 SET SQL_SAFE_UPDATES = 1;
 
-ALTER TABLE Ticket ADD CONSTRAINT fk_plate_id FOREIGN KEY (plate_id) REFERENCES Vehicle(plate_id);
-ALTER TABLE Ticket ADD CONSTRAINT fk_issuer_code FOREIGN KEY (issuer_code) REFERENCES Issuer(issuer_code);
-ALTER TABLE Ticket ADD CONSTRAINT fk_street_name FOREIGN KEY (street_name) REFERENCES Street(street_name);
+ALTER TABLE Ticket ADD CONSTRAINT fk_location_id FOREIGN KEY (location_id) REFERENCES Address(location_id);
+
+SELECT * FROM Ticket;
+
