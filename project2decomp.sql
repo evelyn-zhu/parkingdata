@@ -87,6 +87,7 @@ ALTER TABLE mega_table
 -- -----------------------------------------------------
 -- Table Issuer
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS Issuer;
 CREATE TABLE IF NOT EXISTS Issuer (
   issuer_code INT(8) NOT NULL,
   issuing_agency VARCHAR(2) NULL,
@@ -100,7 +101,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table Address
 -- -----------------------------------------------------
-DROP TABLE Address;
+DROP TABLE IF EXISTS Address;
 CREATE TABLE IF NOT EXISTS Address (
   full_street_code VARCHAR(25) NULL,
   violation_county VARCHAR(45) NULL,
@@ -116,6 +117,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table Vehicle
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS Vehicle;
 CREATE TABLE IF NOT EXISTS Vehicle (
   plate_id VARCHAR(20) NOT NULL,
   registration_state VARCHAR(2) NOT NULL,
@@ -133,7 +135,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table Ticket
 -- -----------------------------------------------------
-DROP TABLE Ticket;
+DROP TABLE IF EXISTS Ticket;
 CREATE TABLE IF NOT EXISTS Ticket (
   summons_number BIGINT(20) NOT NULL,
   issue_date VARCHAR(15) NULL,
@@ -156,8 +158,7 @@ CREATE TABLE IF NOT EXISTS Ticket (
   location_id INT(12) NOT NULL,
   plate_id VARCHAR(20) NOT NULL,
   registration_state VARCHAR(2) NOT NULL,
-  PRIMARY KEY (summons_number),
-  FOREIGN KEY ()
+  PRIMARY KEY (summons_number))
 ENGINE = InnoDB;
 
 
@@ -184,6 +185,8 @@ SET
                 (SELECT SUBSTRING(date_first_observed, 1, 4)))
 WHERE date_first_observed != '0';
 
+
+SET SQL_SAFE_UPDATES = 0;
 UPDATE Ticket
 SET
 	date_first_observed = issue_date
@@ -266,16 +269,6 @@ WHERE violation_county = 'BX';
 
 # Adding Issuer Foreign Key
 ALTER TABLE Ticket ADD CONSTRAINT fk_issuer_code FOREIGN KEY (issuer_code) REFERENCES Issuer(issuer_code);
-
-# Adding Address Foreign Key
-# Still takes too long, will need a fix
-SET SQL_SAFE_UPDATES = 0;
-UPDATE Ticket, Address
-SET Ticket.location_id = Address.location_id
-WHERE Ticket.full_street_code = Address.full_street_code AND Ticket.street_name = Address.street_name;
-SET SQL_SAFE_UPDATES = 1;
-
-ALTER TABLE Ticket ADD CONSTRAINT fk_location_id FOREIGN KEY (location_id) REFERENCES Address(location_id);
 
 SELECT * FROM Ticket;
 
