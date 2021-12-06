@@ -43,6 +43,8 @@ try
         <li><a href="insertParkingData.php">Insert</a></li>
 				<li><a href="updateVehicle.php">Update</a></li>
 				<li><a href="deleteTicket.php">Delete</a></li>
+        <li><a href="stats.php">Stats</a></li>
+
       </ul>
     </div>
     
