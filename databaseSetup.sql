@@ -2,6 +2,7 @@
 DROP DATABASE IF EXISTS parking_data;
 CREATE DATABASE parking_data;
 USE parking_data;
+SET SQL_SAFE_UPDATES = 0;
 
 # Creating mega_table
 # IMPORTANT: NOTE THAT YOU MUST ADJUST YOUR MYSQL TIMEOUT SETTINGS
@@ -28,7 +29,7 @@ CREATE TABLE mega_table (
     issuer_command VARCHAR(5),
     issuer_squad VARCHAR(5), #cast to INT(5) after changing empties
     violation_time VARCHAR(5), # could be combined to make a datetime with date
-    time_first_observed VARCHAR(10), #MOSTLY NULL VALUES, could be dropped
+    time_first_observed VARCHAR(12), #MOSTLY NULL VALUES, could be dropped
     violation_county VARCHAR(10),
     front_or_opposite VARCHAR(2),
     house_number VARCHAR(20), #cast to INT after replacing empties with 0
@@ -45,7 +46,7 @@ CREATE TABLE mega_table (
     unregistered_vehicle VARCHAR(10), #empty = 0, 0 = registered, 1 =unregistered
     vehicle_year VARCHAR(10), #25% are 0 for this, maybe cast to NULL
     meter_number VARCHAR(100), # MOSTLY NULL, we can drop this
-    feet_from_curb VARCHAR(10), # almost all 0's, could also drop
+    feet_from_curb VARCHAR(10), # almost all 0s, could also drop
     violation_post_code TEXT, # could cast to INT after replacing empties with 0
     violation_description VARCHAR(100), # replace NULL with 'unspecified' or fill using rule
     no_standing_or_stopping VARCHAR(10), # ALL NULL, DROP
@@ -116,6 +117,18 @@ CREATE TABLE IF NOT EXISTS Address (
   PRIMARY KEY (location_id))
 ENGINE = InnoDB;
 
+## Cleaning Street Data 
+UPDATE mega_table
+SET
+	street_name = LOWER(street_name);
+    
+UPDATE mega_table
+SET
+	street_name = REPLACE(street_name, 'avenue', 'ave');
+
+UPDATE mega_table
+SET
+	street_name = REPLACE(street_name, 'street', 'st');
 
 -- -----------------------------------------------------
 -- Table Vehicle
@@ -145,7 +158,7 @@ CREATE TABLE IF NOT EXISTS Ticket (
   violation_code INT(2) NULL,
   violation_precinct INT(2) NULL,
   violation_time VARCHAR(5) NULL,
-  date_first_observed VARCHAR(10) NULL,
+  date_first_observed VARCHAR(12) NULL,
   time_first_observed VARCHAR(10) NULL,
   front_or_opposite VARCHAR(2) NULL,
   law_section VARCHAR(100) NULL,
@@ -158,7 +171,6 @@ CREATE TABLE IF NOT EXISTS Ticket (
   issuer_code INT(8) NOT NULL,
   full_street_code VARCHAR(100) NOT NULL,
   street_name TEXT NOT NULL,
-  location_id INT(12) NOT NULL,
   plate_id VARCHAR(20) NOT NULL,
   registration_state VARCHAR(2) NOT NULL,
   PRIMARY KEY (summons_number))
@@ -171,11 +183,11 @@ SET SESSION sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR
 INSERT INTO Ticket (summons_number, issue_date, violation_code, violation_precinct, violation_time,
 date_first_observed, time_first_observed, front_or_opposite, law_section, sub_division, meter_number,
 feet_from_curb, violation_description, house_number, intersecting_street, issuer_code, full_street_code,
-street_name, location_id, plate_id, registration_state)
+street_name, plate_id, registration_state)
 SELECT summons_number, issue_date, violation_code, violation_precinct, violation_time,
 date_first_observed, time_first_observed, front_or_opposite, law_section, sub_division, meter_number,
 feet_from_curb, violation_description, house_number, intersecting_street, issuer_code, CONCAT(street_code1,'-',street_code2,'-',street_code3) AS full_street_code,
-street_name, 0, plate_id, registration_state
+street_name, plate_id, registration_state
 FROM mega_table
 ORDER BY summons_number DESC;
 
@@ -188,7 +200,6 @@ SET
 				(SELECT SUBSTRING(date_first_observed, 7, 2)), '/',
                 (SELECT SUBSTRING(date_first_observed, 1, 4)))
 WHERE date_first_observed != '0';
-
 
 UPDATE Ticket
 SET
@@ -216,18 +227,6 @@ FROM mega_table
 GROUP BY
 issuer_code;
 
-## Cleaning Street Data 
-UPDATE mega_table
-SET
-	street_name = LOWER(street_name);
-    
-UPDATE mega_table
-SET
-	street_name = REPLACE(street_name, 'avenue', 'ave');
-
-UPDATE mega_table
-SET
-	street_name = REPLACE(street_name, 'street', 'st');
 
 ## Filling Address
 INSERT INTO Address(full_street_code, violation_county, street_name, 
@@ -239,6 +238,7 @@ GROUP BY
 full_street_code, street_name;
 
 ## CLEANING COUNTY DATA
+
 UPDATE Address
 SET
 	violation_county = 'Q'
@@ -273,98 +273,5 @@ WHERE violation_county = 'BX';
 # Adding Issuer Foreign Key
 ALTER TABLE Ticket ADD CONSTRAINT fk_issuer_code FOREIGN KEY (issuer_code) REFERENCES Issuer(issuer_code);
 
-SELECT * FROM Ticket;
-
-### Adding Advanced Procedures
-USE parking_data;
-DELIMITER //
-DROP PROCEDURE IF EXISTS hours_correction;
-CREATE PROCEDURE hours_correction()
-BEGIN
-	DECLARE sql_error INT DEFAULT FALSE;
-    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET sql_error = TRUE;
-		
-    START TRANSACTION;
-		UPDATE Address
-        SET from_hours_in_effect = 'ALL'
-			to_hours_in_effect = 'ALL'
-        WHERE from_hours_in_effect = '' OR from_hours_in_effect = '0  :'
-	
-    IF sql_error = FALSE THEN
-		COMMIT;
-        SELECT 'Transaction committed';
-	ELSE
-		ROLLBACK;
-        SELECT 'Transaction failed';
-	END IF;
-END //
-DELIMITER ;
-
-DROP TRIGGER IF EXISTS prevent_missing
-DELIMITER //
-CREATE TRIGGER prevent_missing
-BEFORE UPDATE
-ON Ticket
-FOR EACH ROW
-BEGIN
-	IF LENGTH(new.plate_id) > 8 OR
-    LENGTH(new.state_registration != 2) OR
-    LENGTH(new.summons_number != 10) OR
-    new.street_name = '' OR
-    LENGTH(new.issuer_code != 6) THEN
-	SIGNAL SQLSTATE '45000';
-    END IF;
-END //
-DELIMITER ;
-
-
-DROP VIEW IF EXISTS address_view;
-CREATE VIEW address_view AS
-SELECT summons_number, issue_date, violation_code, violation_precinct, violation_time, time_first_observed,
-front_or_opposite, law_section, sub_division, meter_number, house_number, intersecting_street,
-t.full_street_code, t.street_name, violation_county, days_parking_in_effect, from_hours_in_effect, to_hours_in_effect,
-CONCAT(t.full_street_code, ' ', t.street_name) AS code_plus_name
-FROM Ticket t
-INNER JOIN Address a ON 
-	t.full_street_code = a.full_street_code AND t.street_name = a.street_name;
-
-
-DROP VIEW IF EXISTS issuer_view;
-CREATE VIEW issuer_view AS
-SELECT summons_number, issue_date, violation_code, violation_precinct, violation_time,
-date_first_observed, time_first_observed, front_or_opposite, law_section, sub_division, meter_number,
-feet_from_curb, violation_description, street_name, t.issuer_code, issuing_agency, issuer_precinct,
-issuer_command, issuer_squad
-FROM Ticket t
-INNER JOIN Issuer i ON 
-	t.issuer_code = i.issuer_code;
-    
-
-DROP VIEW IF EXISTS vehicle_view;
-CREATE VIEW vehicle_view AS
-SELECT summons_number, issue_date, violation_code, violation_precinct, violation_time,
-feet_from_curb, violation_description, street_name, t.plate_id, t.registration_state,
-plate_type, vehicle_body_type, vehicle_make, vehicle_expiration_date, vehicle_color,
-unregistered_vehicle, vehicle_year, CONCAT(t.plate_id, t.registration_state) AS full_plate
-FROM Ticket t
-INNER JOIN Vehicle v ON 
-	t.plate_id = v.plate_id AND t.registration_state = v.registration_state;
-
-SELECT * FROM issuer_view;
-
-DROP VIEW IF EXISTS v_tix_count;
-CREATE VIEW v_tix_count AS
-SELECT plate_id, registration_state, COUNT(full_plate) AS ticket_count
-FROM vehicle_view
-WHERE plate_id != 'BLANKPLATE' AND plate_id != 'N/A'
-GROUP BY full_plate
-ORDER BY ticket_count DESC;
-
-DROP VIEW IF EXISTS i_tix_count;
-CREATE VIEW i_tix_count AS
-SELECT issuer_code, issuer_precinct, COUNT(issuer_code) AS ticket_count
-FROM issuer_view
-WHERE issuer_code != '0'
-GROUP BY issuer_code
-ORDER BY ticket_count DESC;
+SELECT * FROM Vehicle;
 

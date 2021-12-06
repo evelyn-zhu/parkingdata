@@ -1,10 +1,22 @@
-body{
+body {
 padding-left: 100px;
+background: url("NYC.jpg");
+background-size: 1500px;
+background-position: bottom;
+background-repeat: no-repeat;
+}
+
+html {
+    position: relative;
+    min-width: 1024px;
+    min-height: 768px;
+	height: 100%;
+	font-family: -apple-system-ui-serif, ui-serif;
 }
 
 div#navbar {
  height: 40px;
- width: 600px;
+ width: 100%;
  background-repeat:repeat-x;
 }
 
@@ -22,36 +34,75 @@ div#navbar li {
 }
 
 div#navbar li a {
- text-decoration: none;
+  position: relative;
+  display: inline-block;
+  font-size: 1em;
+  font-weight: 800;
+  color: white;
+  overflow: hidden;
+  background: linear-gradient(to right, #127451, #127451 50%, white 50%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 100%;
+  background-position: 100%;
+  transition: background-position 275ms ease;
 }
 
 div#navbar li a:hover{
- color: red;
- border-bottom: dashed 1px;
+	background-position: 0 100%;
 }
+
+a {
+	position: relative;
+	display: inline-block;
+	font-size: 1em;
+	font-weight: 800;
+	color: white;
+	overflow: hidden;
+	background: linear-gradient(to right, #127451, #127451 50%, white 50%);
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-size: 200% 100%;
+	background-position: 100%;
+	transition: background-position 275ms ease;
+}
+
+a:hover{
+	background-position: 0 100%;
+}
+
+hr.rounded {
+	border-radius: 2px;
+}
+
 
 label {
   display: block;
   margin: 5px 0;
+  color: white;
 }
 
 table {
   border-collapse: collapse;
   border-spacing: 0;
+  color: white;
 }
 
 td, th {
   padding: 5px 30px 5px 30px;
   border-bottom: 1px solid #aaa;
+  color: white;
 }
 
 h1{
-	color:red;
+	color: white;
 }
 
 
 h3{
-	color:#ff0000;
+	color: white;
 
 }
 
@@ -62,6 +113,16 @@ footer{
 
 p{
 	width: 600px;
-	color:red
+	color:white;
+}
 
+.sub-entry {
+    width: 25%;
+    float: left;
+}
+
+.button {
+    text-align: center;
+    padding-top: 20px;
+    clear: both;
 }
