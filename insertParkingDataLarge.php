@@ -70,7 +70,7 @@ if (isset($_POST['f_submit'])) {
     }
     catch (PDOException $ex)
     { // Error in database processing.
-      echo $sql . "<br>" . $error->getMessage(); // HTTP 500 - Internal Server Error
+      echo "Insert Failed"; // HTTP 500 - Internal Server Error
     }
 }
 
