@@ -168,7 +168,7 @@ CREATE TABLE IF NOT EXISTS Ticket (
   violation_description VARCHAR(45) NULL,
   house_number VARCHAR(45) NULL,
   intersecting_street VARCHAR(100) NULL,
-  issuer_code INT(8) NOT NULL,
+  issuer_code INT(8) NOT NULL DEFAULT 0,
   full_street_code VARCHAR(100) NOT NULL,
   street_name TEXT NOT NULL,
   plate_id VARCHAR(20) NOT NULL,
@@ -270,8 +270,9 @@ WHERE violation_county = 'BX';
 # NEED TO FIND QUICKER WAY FOR THIS
 #ALTER TABLE Ticket ADD CONSTRAINT fk_plate_id FOREIGN KEY (plate_id, registration_state) REFERENCES Vehicle(plate_id, registration_state);
 
-# Adding Issuer Foreign Key
-ALTER TABLE Ticket ADD CONSTRAINT fk_issuer_code FOREIGN KEY (issuer_code) REFERENCES Issuer(issuer_code);
 
-SELECT * FROM Vehicle;
+INSERT INTO Ticket (summons_number, issuer_code, full_street_code, street_name, plate_id, registration_state)
+VALUES (123456, 123456, '12345-67899-10112','Sesame Street', 'ABC123', 'NJ');
+
+SELECT * FROM Ticket;
 

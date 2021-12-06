@@ -60,7 +60,7 @@ if (isset($_POST['f_submit'])) {
       </ul>
     </div>
 
-<h1>Insert Ticket</h1>
+<h1>Update Vehicle Information</h1>
 
     <form method="post">
         <label for="plate_id">Plate ID</label>
