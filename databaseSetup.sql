@@ -264,15 +264,5 @@ SET
 	violation_county = 'BRONX'
 WHERE violation_county = 'BX';
 
-    
-### FOREIGN KEY ADDING
-# Adding Vehicle Foreign KEY
-# NEED TO FIND QUICKER WAY FOR THIS
-#ALTER TABLE Ticket ADD CONSTRAINT fk_plate_id FOREIGN KEY (plate_id, registration_state) REFERENCES Vehicle(plate_id, registration_state);
-
-
-INSERT INTO Ticket (summons_number, issuer_code, full_street_code, street_name, plate_id, registration_state)
-VALUES (123456, 123456, '12345-67899-10112','Sesame Street', 'ABC123', 'NJ');
-
 SELECT * FROM Ticket;
 

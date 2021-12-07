@@ -111,7 +111,8 @@ SELECT issuer_code, issuer_precinct, COUNT(issuer_code) AS ticket_count
 FROM issuer_view
 WHERE issuer_code != '0'
 GROUP BY issuer_code
-ORDER BY ticket_count DESC;
+ORDER BY ticket_count DESC
+LIMIT 10;
 
 # Ticket Count By Street Name
 DROP VIEW IF EXISTS a_tix_count;
@@ -137,4 +138,7 @@ DELIMITER ;
 SET SESSION sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
 SELECT * FROM a_tix_count LIMIT 5;
 SELECT * FROM i_tix_count LIMIT 5;
-SELECT * FROM v_tix_count LIMIT 5;
+
+CREATE TABLE vehicleStats AS (SELECT * FROM v_tix_count LIMIT 5);
+# CREATE TABLE addressStats AS (SELECT * FROM a_tix_count LIMIT 5);
+# CREATE TABLE issuerStats AS (SELECT * FROM i_tix_count LIMIT 5);
