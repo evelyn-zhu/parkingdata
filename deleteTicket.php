@@ -43,7 +43,8 @@ if (isset($_POST['field_submit'])) {
         <li><a href="insertParkingData.php">Insert</a></li>
 		    <li><a href="updateVehicle.php">Update</a></li>
         <li><a href="deleteTicket.php">Delete</a></li>
-        <li><a href="stats.php">Stats</a></li>
+        <li><a href="parkingInfo.php">Parking Info</a></li>
+        <li><a href="mostWanted.php">Most Wanted</a></li>
       </ul>
     </div>
     <!-- See the project.css file to note h1 (Heading 1) is stylized.-->

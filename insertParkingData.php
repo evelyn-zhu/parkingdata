@@ -24,7 +24,6 @@ if (isset($_POST['f_submit'])) {
       $prepared_stmt->bindValue(':plate_id', $var_plate_id, PDO::PARAM_STR);
       $prepared_stmt->bindValue(':registration_state', $var_registration_state, PDO::PARAM_STR);
       $result = $prepared_stmt->execute();
-
     }
     catch (PDOException $ex)
     { // Error in database processing.
@@ -48,7 +47,8 @@ if (isset($_POST['f_submit'])) {
         <li><a href="insertParkingDataLarge.php">Insert Full Ticket</a></li>
 		    <li><a href="updateVehicle.php">Update</a></li>
         <li><a href="deleteTicket.php">Delete</a></li>
-        <li><a href="stats.php">Stats</a></li>
+        <li><a href="parkingInfo.php">Parking Info</a></li>
+        <li><a href="mostWanted.php">Most Wanted</a></li>
       </ul>
     </div>
 
@@ -79,11 +79,11 @@ if (isset($_POST['f_submit'])) {
       if (isset($_POST['f_submit'])) {
         if ($result) { 
     ?>
-        <h3> parking data was inserted successfully. </h3>
+        <h3> Parking Data was inserted successfully. </h3>
     <?php 
         } else { 
     ?>
-          <h3> Sorry, there was an error. parking data was not inserted. </h3>
+          <h3> Sorry, there was an error. Parking data was not inserted. </h3>
     <?php 
         }
       } 

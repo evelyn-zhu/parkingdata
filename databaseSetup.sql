@@ -264,5 +264,9 @@ SET
 	violation_county = 'BRONX'
 WHERE violation_county = 'BX';
 
-SELECT * FROM Ticket;
 
+INSERT INTO Ticket (summons_number, issuer_code, full_street_code, street_name, plate_id, registration_state)
+ VALUES (0123456789, 123456, '12345-67899-10112','Sesame Street', 'ABC123', 'NJ');
+ 
+DELETE FROM Ticket WHERE summons_number = 0123456789;
+SELECT * FROM Ticket;

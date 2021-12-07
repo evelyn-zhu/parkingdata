@@ -1,10 +1,12 @@
 <?php
 // If the all the variables are set when the Submit button is clicked...
+if (isset($_POST['field_submit'])) {
     // Refer to conn.php file and open a connection.
     require_once("conn.php");
     // Will get the value typed in the form text field and save into variable
-    $query = "SELECT street_name FROM a_tix_count LIMIT 5"
 
+    $var_registration_state = $_POST['field_registration_state'];
+    $query = "SELECT * FROM vehicleStats WHERE registration_state = :ph_registration_state LIMIT 10";
 
 try
     {
@@ -12,6 +14,7 @@ try
       $prepared_stmt = $dbo->prepare($query);
       //bind the value saved in the variable $var_director to the place holder :ph_director  
       // Use PDO::PARAM_STR to sanitize user string.
+      $prepared_stmt->bindValue(':ph_registration_state', $var_registration_state, PDO::PARAM_STR);
       $prepared_stmt->execute();
       // Fetch all the values based on query and save that to variable $result
       $result = $prepared_stmt->fetchAll();
@@ -21,6 +24,7 @@ try
     { // Error in database processing.
       echo $sql . "<br>" . $error->getMessage(); // HTTP 500 - Internal Server Error
     }
+}
 ?>
 
 <html>
@@ -36,16 +40,30 @@ try
         <li><a href="index.html">Home</a></li>
         <li><a href="getParkingData.php">Search</a></li>
         <li><a href="insertParkingData.php">Insert</a></li>
-        <li><a href="updateVehicle.php">Update</a></li>
-        <li><a href="deleteTicket.php">Delete</a></li>
-        <li><a href="stats.php">Stats</a></li>
+		    <li><a href="updateVehicle.php">Update</a></li>
+		    <li><a href="deleteTicket.php">Delete</a></li>
+        <li><a href="parkingInfo.php">Parking Info</a></li>
+        <li><a href="mostWanted.php">Most Wanted</a></li>
 
       </ul>
     </div>
     
-    <h1> Total Statistics Of Tickets Issued On Different Streets</h1>
+    <h1>View Parking Info By Street</h1>
+    <!-- This is the start of the form. This form has one text field and one button.
+      See the project.css file to note how form is stylized.-->
+    <form method="post">
+
+      <label for="id_registration_state">Registration State</label>
+      <!-- The input type is a text field. Note the name and id. The name attribute
+        is referred above on line 7. $var_director = $_POST['field_director']; id attribute is referred in label tag above on line 52-->
+      <input type="text" name="field_registration_state" id = "id_registration_state">
+      <!-- The input type is a submit button. Note the name and value. The value attribute decides what will be dispalyed on Button. In this case the button shows Submit.
+      The name attribute is referred  on line 3 and line 61. -->
+      <input type="submit" name="field_submit" value="Submit">
+    </form>
     
     <?php
+      if (isset($_POST['field_submit'])) {
         // If the query executed (result is true) and the row count returned from the query is greater than 0 then...
         if ($result && $prepared_stmt->rowCount() > 0) { ?>
               <!-- first show the header RESULT -->
@@ -56,7 +74,9 @@ try
                 <thead>
                    <!-- The top row is table head with four columns named -- ID, Title ... -->
                   <tr>
-                    <th>street name</th>
+                    <th>Plate ID</th>
+                    <th>Registration State</th>
+                    <th>Ticket Count</th>
                   </tr>
                 </thead>
                  <!-- Create rest of the the body of the table -->
@@ -66,7 +86,11 @@ try
                 
                     <tr>
                        <!-- Print (echo) the value of mID in first column of table -->
-                      <td><?php echo $row["street_name"]; ?></td>
+                      <td><?php echo $row["plate_id"]; ?></td>
+                      <!-- Print (echo) the value of title in second column of table -->
+                      <td><?php echo $row["registration_state"]; ?></td>
+                      <!-- Print (echo) the third column of table and so on... -->
+                      <td><?php echo $row["ticket_count"]; ?></td>
                     <!-- End first row. Note this will repeat for each row in the $result variable-->
                     </tr>
                   <?php } ?>
@@ -77,17 +101,12 @@ try
   
         <?php } else { ?>
           <!-- IF query execution resulted in error display the following message-->
-          <!-- <h3>Sorry, no results found for summons number <?php echo $_POST['field_summons_number']; ?>. </h3>-->
-          <h3>Sorry, no results found for street namre. </h3>
+          <h3>Sorry, no results found for this state </h3>
           <!-- <h3>Sorry, no results found for summons number <?php echo $prepared_stmt; ?>. </h3>-->
         <?php }
-?>
+    } ?>
+
+
     
   </body>
 </html>
-
-
-
-
-
-

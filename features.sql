@@ -27,10 +27,12 @@ DELIMITER ;
 Call hours_correction();
 
 ## Trigger to prevent future incomplete data submissions
+## Still fixing 
+/*
 DROP TRIGGER IF EXISTS prevent_missing;
 DELIMITER //
 CREATE TRIGGER prevent_missing
-BEFORE UPDATE
+BEFORE INSERT
 ON Ticket
 FOR EACH ROW
 BEGIN
@@ -43,6 +45,7 @@ BEGIN
     END IF;
 END //
 DELIMITER ;
+*/
 
 ## Trigger to Add New Vehicle if New Ticket Added
 DROP TRIGGER IF EXISTS new_vehicle_ticket;
@@ -55,7 +58,7 @@ BEGIN
 	IF NOT EXISTS (SELECT 1 FROM Vehicle WHERE plate_id = NEW.plate_id AND registration_state = NEW.registration_state)
     THEN
 		INSERT INTO Vehicle
-			VALUES (NEW.plate_id, NEW.registration_state, '', '', '', '', '', '', '');
+			VALUES (NEW.plate_id, NEW.registration_state, '', '', '', 0, '', '', '');
     END IF;
 END //
 DELIMITER ;
@@ -139,6 +142,9 @@ SET SESSION sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR
 SELECT * FROM a_tix_count LIMIT 5;
 SELECT * FROM i_tix_count LIMIT 5;
 
-CREATE TABLE vehicleStats AS (SELECT * FROM v_tix_count LIMIT 5);
-# CREATE TABLE addressStats AS (SELECT * FROM a_tix_count LIMIT 5);
-# CREATE TABLE issuerStats AS (SELECT * FROM i_tix_count LIMIT 5);
+DROP TABLE IF EXISTS vehicleStats;
+CREATE TABLE vehicleStats AS (SELECT * FROM v_tix_count);
+
+SELECT * FROM vehicleStats;
+
+
