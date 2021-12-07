@@ -145,6 +145,4 @@ SELECT * FROM i_tix_count LIMIT 5;
 DROP TABLE IF EXISTS vehicleStats;
 CREATE TABLE vehicleStats AS (SELECT * FROM v_tix_count);
 
-SELECT * FROM vehicleStats;
-
 
